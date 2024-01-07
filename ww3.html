@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+<body>
+    <div id="map" style="height: 500px;"></div>
+
+    <!-- Inline Leaflet.js CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+
+    <!-- Leaflet.js Library -->
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+
+    <!-- Inline JavaScript -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var map = L.map('map').setView([0,0], 1);
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
+
+            // Fetch the GeoJSON data from the provided URL
+            fetch('https://raw.githubusercontent.com/franz14000/geojson/main/geodata.js')
+                .then(response => response.json())
+                .then(data => {
+                    L.geoJSON(data, {
+                        onEachFeature: onEachFeature
+                    }).addTo(map);
+                });
+
+            function onEachFeature(feature, layer) {
+                layer.on({
+                    click: function(e) {
+                        // Prevent default right-click behavior
+                        e.originalEvent.preventDefault();
+
+                        // Show contextual menu
+                        var customMenu = createContextMenu(e.latlng);
+
+                        // Add event listeners for menu items
+                        customMenu.querySelectorAll('li').forEach(function(item) {
+                            item.addEventListener('click', function() {
+                                handleMenuSelection(item, layer);
+                            });
+                        });
+                    }
+                });
+            }
+
+            function createContextMenu(latlng) {
+                // Remove existing menu if present
+                var existingMenu = document.getElementById('context-menu');
+                if (existingMenu) {
+                    existingMenu.parentNode.removeChild(existingMenu);
+                }
+
+                // Create new menu
+                var menu = document.createElement('ul');
+                menu.id = 'context-menu';
+                menu.innerHTML = '<li style="color:red">Axis</li><li>Allied</li><li style="color:grey">None</li>';
+                menu.style.position = 'absolute';
+                menu.style.left = '100px';
+                menu.style.top = '100px';
+				menu.style.zIndex = '999';
+                menu.style.listStyle = 'none';
+                menu.style.padding = '10px';
+                menu.style.backgroundColor = 'white';
+                menu.style.border = '1px solid black';
+				
+				// Add hover effect
+                Array.from(menu.children).forEach(function(item) {
+                    item.style.cursor = 'pointer'; // Change cursor to pointer on hover
+                });
+
+                document.body.appendChild(menu);
+                return menu;
+            }
+
+            function handleMenuSelection(item, layer) {
+                switch (item.textContent) {
+                    case 'Axis':
+                        layer.setStyle({ fillColor: 'red' });
+                        break;
+                    case 'Allied':
+                        layer.setStyle({ fillColor: 'black' });
+                        break;
+                    case 'None':
+                        layer.setStyle({ fillColor: null });
+                        break;
+                }
+
+                // Remove menu after selection
+                var existingMenu = document.getElementById('context-menu');
+                if (existingMenu) {
+                    existingMenu.parentNode.removeChild(existingMenu);
+                }
+            }
+        });
+    </script>
+</body>
+</html>
